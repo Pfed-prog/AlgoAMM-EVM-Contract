@@ -4,6 +4,7 @@ pragma solidity =0.8.18;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
+import './libraries/Math.sol';
 import './interfaces/IFactory.sol';
 import './interfaces/ICallee.sol';
 import './interfaces/IPair.sol';
@@ -23,7 +24,7 @@ abstract contract Pair is ERC20, IPair {
     uint private reserve0;           // uses single storage slot, accessible via getReserves
     uint private reserve1;           // uses single storage slot, accessible via getReserves
     uint32 private blockTimestampLast; // uses single storage slot, accessible via getReserves
-
+    uint public kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
     uint private unlocked = 1;
 
     modifier lock() {
@@ -58,16 +59,16 @@ abstract contract Pair is ERC20, IPair {
     }
 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
-    function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
+    function _mintFee(uint _reserve0, uint _reserve1) private returns (bool feeOn) {
         address feeTo = IFactory(factory).feeTo();
         feeOn = feeTo != address(0);
-        //uint _kLast = kLast; // gas savings
-/*         if (feeOn) {
+        uint _kLast = kLast;
+        if (feeOn) {
             if (_kLast != 0) {
-                uint rootK = SafeMath.sqrt(uint(_reserve0).mul(_reserve1));
-                uint rootKLast = SafeMath.sqrt(_kLast);
+                uint rootK = Math.sqrt(uint(_reserve0).mul(_reserve1));
+                uint rootKLast = Math.sqrt(_kLast);
                 if (rootK > rootKLast) {
-                    uint numerator = totalSupply.mul(rootK.sub(rootKLast));
+                    uint numerator = SafeMath.mul(totalSupply(), rootK.sub(rootKLast));
                     uint denominator = rootK.mul(5).add(rootKLast);
                     uint liquidity = numerator / denominator;
                     if (liquidity > 0) _mint(feeTo, liquidity);
@@ -75,29 +76,31 @@ abstract contract Pair is ERC20, IPair {
             }
         } else if (_kLast != 0) {
             kLast = 0;
-        } */
+        }
     }
 
     function mint(address to) external lock returns (uint liquidity) {
-        (uint _reserve0, uint _reserve1,) = getReserves(); // gas savings
+        (uint _reserve0, uint _reserve1,) = getReserves(); 
         uint balance = IERC20(reserveToken).balanceOf(address(this));
         
-        // uint amount0 = balance0.sub(_reserve0);
+        uint amount = balance.sub(_reserve0.add(reserve1));
 
 
-        //bool feeOn = _mintFee(_reserve0, _reserve1);
-        //uint _totalSupply = totalSupply; 
-/*         if (_totalSupply == 0) {
-            liquidity = SafeMath.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
+        bool feeOn = _mintFee(_reserve0, _reserve1);
+        uint _totalSupply = totalSupply();
+
+        if (_totalSupply == 0) {
+            liquidity = amount.sub(MINIMUM_LIQUIDITY);
            _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
         } else {
-            liquidity = SafeMath.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
+            liquidity = Math.min(amount.mul(_totalSupply) / _reserve0, amount.mul(_totalSupply) / _reserve1);
         }
+        
         require(liquidity > 0, 'INSUFFICIENT_LIQUIDITY_MINTED');
-        _mint(to, liquidity); */
+        _mint(to, liquidity);
 
         //_update(balance0, balance1, _reserve0, _reserve1);
-        //if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
+        if (feeOn) kLast = (_reserve0).mul(_reserve1); // reserve0 and reserve1 are up-to-date
         //emit Mint(msg.sender, amount0, amount1);
     }
 
