@@ -4,7 +4,7 @@ pragma solidity =0.8.18;
 import './interfaces/IFactory.sol';
 import './Pair.sol';
 
-abstract contract Factory is IFactory {
+contract Factory is IFactory {
     address public feeTo;
     address public feeToSetter;
 
@@ -22,10 +22,21 @@ abstract contract Factory is IFactory {
     function createPair(string calldata option0, string calldata option1) external returns (address pair) {
         require(getPair[option0][option1] == address(0), 'PAIR_EXISTS');
 
+        bytes32 salt = keccak256(abi.encodePacked(option0, option1));
+
+        pair = address(
+            new Pair{salt: salt}(option0, option1)
+        );
+
         IPair(pair).initialize(option0, option1);
         getPair[option0][option1] = pair;
         getPair[option1][option0] = pair;
         allPairs.push(pair);
+        return pair;
+    }
+
+    function getPairAddress(string calldata option0, string calldata option1) external view returns (address pair) {
+        return getPair[option0][option1];
     }
 
     function setFeeTo(address _feeTo) external {
