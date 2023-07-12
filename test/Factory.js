@@ -1,8 +1,14 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 
+function expandTo18Decimals(n) {
+  return BigInt(n * 10 ** 18);
+}
+
+const TOTAL_SUPPLY = expandTo18Decimals(10000);
+
 describe("features", function () {
-  let factory, pair, pairAddress, option0, option1;
+  let factory, pair, pairAddress, option0, option1, reserveToken;
 
   let deployer, jane;
   beforeEach(async () => {
@@ -14,11 +20,19 @@ describe("features", function () {
 
     const MyPair = await ethers.getContractFactory("Pair");
 
+    const MyERC20 = await ethers.getContractFactory("GLDToken");
+
+    reserveToken = await MyERC20.deploy(TOTAL_SUPPLY);
+    await reserveToken.waitForDeployment();
+
+    // console.log(reserveToken.target);
+
     option0 = "Option1";
     option1 = "Option2";
 
-    const factoryTx = await factory.createPair(option0, option1);
-    await factoryTx.wait();
+    await factory
+      .createPair(option0, option1, reserveToken.target)
+      .then((tx) => tx.wait());
 
     pairAddress = await factory.getPairAddress(option0, option1);
     pair = MyPair.attach(pairAddress);

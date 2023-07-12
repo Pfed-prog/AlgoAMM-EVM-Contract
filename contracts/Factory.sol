@@ -19,7 +19,7 @@ contract Factory is IFactory {
         return allPairs.length;
     }
 
-    function createPair(string calldata option0, string calldata option1) external returns (address pair) {
+    function createPair(string calldata option0, string calldata option1, address reserveToken) external returns (address pair) {
         require(getPair[option0][option1] == address(0), 'PAIR_EXISTS');
 
         bytes32 salt = keccak256(abi.encodePacked(option0, option1));
@@ -28,7 +28,7 @@ contract Factory is IFactory {
             new Pair{salt: salt}(option0, option1)
         );
 
-        IPair(pair).initialize(option0, option1);
+        IPair(pair).initialize(option0, option1, reserveToken);
         getPair[option0][option1] = pair;
         getPair[option1][option0] = pair;
         allPairs.push(pair);

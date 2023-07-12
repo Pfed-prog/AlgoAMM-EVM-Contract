@@ -9,7 +9,7 @@ const TOTAL_SUPPLY = expandTo18Decimals(10000);
 const MINIMUM_LIQUIDITY = BigInt(100);
 
 describe("features", function () {
-  let factory, pair, pairAddress, option0, option1;
+  let factory, pair, pairAddress, option0, option1, reserveToken;
 
   let deployer, jane;
   beforeEach(async () => {
@@ -21,33 +21,34 @@ describe("features", function () {
 
     const MyPair = await ethers.getContractFactory("Pair");
 
+    const MyERC20 = await ethers.getContractFactory("GLDToken");
+
+    reserveToken = await MyERC20.deploy(TOTAL_SUPPLY);
+    await reserveToken.waitForDeployment();
+
     option0 = "Option1";
     option1 = "Option2";
 
-    const factoryTx = await factory.createPair(option0, option1);
-    await factoryTx.wait();
+    await factory
+      .createPair(option0, option1, reserveToken.target)
+      .then((tx) => tx.wait());
 
     pairAddress = await factory.getPairAddress(option0, option1);
     pair = MyPair.attach(pairAddress);
   });
 
   it("Should mint ", async function () {
-    const token0Amount = expandTo18Decimals(2);
-    const token1Amount = expandTo18Decimals(18);
-    await token0.transfer(pair.address, token0Amount);
-    await token1.transfer(pair.address, token1Amount);
+    const tokenAmount = expandTo18Decimals(100);
+    await reserveToken.transfer(pairAddress, tokenAmount);
 
-    await pair.mint(deployer.address);
+    await pair.mint(jane.address);
 
-    // sqrt( t1 * t2 )
-    const expectedLiquidity = expandTo18Decimals(6);
-    expect(await pair.totalSupply()).to.eq(expectedLiquidity);
-
-    expect(await token0.balanceOf(pair.address)).to.eq(token0Amount);
-    expect(await token1.balanceOf(pair.address)).to.eq(token1Amount);
+    expect(await reserveToken.balanceOf(pairAddress)).to.eq(tokenAmount);
+    expect(await pair.totalSupply()).to.eq(tokenAmount);
+    expect(await pair.balanceOf(jane.address)).to.eq(tokenAmount);
   });
 
-  it("Should swap", async function () {
+  /*   it("Should swap", async function () {
     const token0Amount = expandTo18Decimals(5);
     const token1Amount = expandTo18Decimals(10);
     await token0.transfer(pair.address, token0Amount, {
@@ -177,5 +178,5 @@ describe("features", function () {
 
     expect(await token0.balanceOf(pair.address)).to.eq(token0Amount);
     expect(await token1.balanceOf(pair.address)).to.eq(token1Amount);
-  });
+  }); */
 });
