@@ -4,8 +4,8 @@ pragma solidity =0.8.18;
 interface IPair {
     function MINIMUM_LIQUIDITY() external pure returns (uint);
     function factory() external view returns (address);
-    // function token0() external view returns (address);
-    // function token1() external view returns (address);
+    function option0() external view returns (string calldata);
+    function option1() external view returns (string calldata);
     function getReserves() external view returns (uint reserve0, uint reserve1, uint32 blockTimestampLast);
     // function price0CumulativeLast() external view returns (uint);
     // function price1CumulativeLast() external view returns (uint);
