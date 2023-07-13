@@ -6,10 +6,16 @@ function expandTo18Decimals(n) {
 }
 
 const TOTAL_SUPPLY = expandTo18Decimals(10000);
-const MINIMUM_LIQUIDITY = BigInt(100);
 
 describe("features", function () {
-  let factory, pair, pairAddress, option0, option1, reserveToken;
+  let factory,
+    pair,
+    pairAddress,
+    option0,
+    option1,
+    reserveToken,
+    token0,
+    token1;
 
   let deployer, jane;
   beforeEach(async () => {
@@ -21,31 +27,38 @@ describe("features", function () {
 
     const MyPair = await ethers.getContractFactory("Pair");
 
-    const MyERC20 = await ethers.getContractFactory("GLDToken");
+    const MyERC20 = await ethers.getContractFactory("Token");
 
-    reserveToken = await MyERC20.deploy(TOTAL_SUPPLY);
+    reserveToken = await MyERC20.deploy("Gold", "GLD");
     await reserveToken.waitForDeployment();
+    reserveToken.mint(deployer.address, TOTAL_SUPPLY);
 
     option0 = "Option1";
     option1 = "Option2";
 
-    await factory
-      .createPair(option0, option1, reserveToken.target)
-      .then((tx) => tx.wait());
+    await factory.createPair(option0, option1, reserveToken.target);
 
     pairAddress = await factory.getPairAddress(option0, option1);
     pair = MyPair.attach(pairAddress);
+
+    const token0Address = await pair.token0Address();
+    token0 = MyERC20.attach(token0Address);
+
+    const token1Address = await pair.token1Address();
+    token1 = MyERC20.attach(token1Address);
   });
 
   it("Should mint ", async function () {
-    const tokenAmount = expandTo18Decimals(100);
+    const number = 100;
+    const tokenAmount = expandTo18Decimals(number);
+    const sqrtNumber = Number(tokenAmount) ** (1 / 2);
+
     await reserveToken.transfer(pairAddress, tokenAmount);
 
     await pair.mint(jane.address);
 
     expect(await reserveToken.balanceOf(pairAddress)).to.eq(tokenAmount);
-    expect(await pair.totalSupply()).to.eq(tokenAmount);
-    expect(await pair.balanceOf(jane.address)).to.eq(tokenAmount);
+    expect(await token0.balanceOf(jane.address)).to.eq(sqrtNumber);
   });
 
   /*   it("Should swap", async function () {

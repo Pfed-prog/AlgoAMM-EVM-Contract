@@ -6,7 +6,9 @@ interface IPair {
     function factory() external view returns (address);
     function option0() external view returns (string calldata);
     function option1() external view returns (string calldata);
-    function getReserves() external view returns (uint baseReserve, uint reserve0, uint reserve1, uint32 blockTimestampLast);
+    function token0Address() external view returns (address);
+    function token1Address() external view returns (address);
+    function getReserves() external view returns (uint baseReserve, uint reserve0, uint reserve1);
     // function price0CumulativeLast() external view returns (uint);
     // function price1CumulativeLast() external view returns (uint);
     function kLast() external view returns (uint);

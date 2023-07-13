@@ -25,7 +25,7 @@ contract Factory is IFactory {
         bytes32 salt = keccak256(abi.encodePacked(option0, option1));
 
         pair = address(
-            new Pair{salt: salt}(option0, option1)
+            new Pair{salt: salt}()
         );
 
         IPair(pair).initialize(option0, option1, reserveToken);

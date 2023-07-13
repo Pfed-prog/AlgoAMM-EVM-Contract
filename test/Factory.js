@@ -20,9 +20,9 @@ describe("features", function () {
 
     const MyPair = await ethers.getContractFactory("Pair");
 
-    const MyERC20 = await ethers.getContractFactory("GLDToken");
+    const MyERC20 = await ethers.getContractFactory("Token");
 
-    reserveToken = await MyERC20.deploy(TOTAL_SUPPLY);
+    reserveToken = await MyERC20.deploy("Gold", "GLD");
     await reserveToken.waitForDeployment();
 
     // console.log(reserveToken.target);
@@ -30,9 +30,7 @@ describe("features", function () {
     option0 = "Option1";
     option1 = "Option2";
 
-    await factory
-      .createPair(option0, option1, reserveToken.target)
-      .then((tx) => tx.wait());
+    await factory.createPair(option0, option1, reserveToken.target);
 
     pairAddress = await factory.getPairAddress(option0, option1);
     pair = MyPair.attach(pairAddress);
