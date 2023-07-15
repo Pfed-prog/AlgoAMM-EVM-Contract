@@ -7,7 +7,7 @@ function expandTo18Decimals(n) {
 
 const TOTAL_SUPPLY = expandTo18Decimals(10000);
 
-describe("features", function () {
+describe("Pair", function () {
   let factory,
     pair,
     pairAddress,
@@ -55,7 +55,7 @@ describe("features", function () {
 
     await reserveToken.transfer(pairAddress, tokenAmount);
 
-    await pair.mint(jane.address);
+    await pair.voteYes(jane.address);
 
     expect(await reserveToken.balanceOf(pairAddress)).to.eq(tokenAmount);
     expect(await token0.balanceOf(jane.address)).to.eq(sqrtNumber);

@@ -7,7 +7,7 @@ function expandTo18Decimals(n) {
 
 const TOTAL_SUPPLY = expandTo18Decimals(10000);
 
-describe("features", function () {
+describe("Factory", function () {
   let factory, pair, pairAddress, option0, option1, reserveToken;
 
   let deployer, jane;
