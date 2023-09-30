@@ -48,17 +48,55 @@ describe("Pair", function () {
     token1 = MyERC20.attach(token1Address);
   });
 
-  it("Should mint ", async function () {
+  it("Should mint No", async function () {
     const number = 100;
     const tokenAmount = expandTo18Decimals(number);
-    const sqrtNumber = Number(tokenAmount) ** (1 / 2);
+    const div2Number = BigInt(Number(tokenAmount)  / 2);
+
+    await reserveToken.transfer(pairAddress, tokenAmount);
+
+    await pair.voteNo(jane.address);
+
+    expect(await reserveToken.balanceOf(pairAddress)).to.eq(tokenAmount);
+    expect(await token0.balanceOf(jane.address)).to.eq(div2Number);
+  });
+
+  it("Should mint Yes", async function () {
+    const number = 100;
+    const tokenAmount = expandTo18Decimals(number);
+    const div2Number = BigInt(Number(tokenAmount)  / 2);
 
     await reserveToken.transfer(pairAddress, tokenAmount);
 
     await pair.voteYes(jane.address);
 
     expect(await reserveToken.balanceOf(pairAddress)).to.eq(tokenAmount);
-    expect(await token0.balanceOf(jane.address)).to.eq(sqrtNumber);
+    expect(await token1.balanceOf(jane.address)).to.eq(div2Number);
+  });
+
+  it("Event Resolves", async function () {
+    await pair.resolve(2);
+    expect(await pair.eventResolved()).to.eq(1);
+    expect(await pair.eventResult()).to.eq(2);
+  });
+
+  it("Reedems", async function () {
+
+    const number = 100;
+    const tokenAmount = expandTo18Decimals(number);
+    const div2Number = BigInt(Number(tokenAmount)  / 2);
+
+    await reserveToken.transfer(pairAddress, tokenAmount);
+
+    await pair.voteNo(jane.address);
+
+    await pair.resolve(0);
+
+    await pair.reedem(div2Number);
+
+    expect(await reserveToken.balanceOf(pairAddress)).to.eq(0);
+    //expect(await token0.balanceOf(jane.address)).to.eq(0);
+    //expect(await reserveToken.balanceOf(jane.address)).to.eq(0);
   });
 
   /*   it("Should swap", async function () {

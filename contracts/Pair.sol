@@ -26,15 +26,20 @@ contract Pair is IPair {
     Token token0;
     Token token1;
 
-    address public reserveToken; //underlying reserve token address
+    address public reserveToken; // underlying reserve token address
 
-    uint private reserve0;           // 
-    uint private reserve1;           // 
+    uint private reserve0;
+    uint private reserve1;
     uint private baseReserve;
 
     uint public kLast; // reserve0 * reserve1, as of immediately after the most recent amountOut event
     uint private unlocked = 1;
 
+    uint public eventResolved;
+    uint public eventResult;
+    // ? add array for options
+
+    // what if i change constant to 0: saves gas?
     modifier lock() {
         require(unlocked == 1, 'LOCKED');
         unlocked = 0;
@@ -42,10 +47,13 @@ contract Pair is IPair {
         unlocked = 1;
     }
 
+
+    // add resolution in factory?
     constructor() {
         factory = msg.sender;
     }
-    
+
+
     // called once by the factory at time of deployment
     function initialize(string calldata _option0, string calldata _option1, address _reserveToken) external {
         require(msg.sender == factory, 'FORBIDDEN');
@@ -64,7 +72,9 @@ contract Pair is IPair {
         token1Address = address(token1);
     }
 
-    function voteYes(address to) external lock returns (uint amountOut) {
+
+    // organize into 1 single function with options to choose (vote)
+    function voteNo(address to) external lock returns (uint amountOut) {
 
         uint balance = IERC20(reserveToken).balanceOf(address(this));
 
@@ -80,29 +90,58 @@ contract Pair is IPair {
             token0.mint(to, amountOut);
         } else {
             amountOut = reserve0.mul(amountIn.div(reserve1.add(amountIn)));
-        }        
+        }      
     }
 
 
-    function voteNo(address to) external lock returns (uint amountOut) {
+    function voteYes(address to) external lock returns (uint amountOut) {
 
         uint balance = IERC20(reserveToken).balanceOf(address(this));
 
         uint totalPositions = reserve0.add(reserve1);
 
-        uint amount = balance.sub(totalPositions);
+        uint amountIn = balance.sub(totalPositions);
 
         if (totalPositions == 0) {
-            amountOut = Math.sqrt(amount);
-        }
-        require(amountOut > 0, 'INSUFFICIENT_amountOut_MINTED');
+            amountOut = amountIn.div(2);
+            reserve0 = reserve0.add(amountOut);
+            reserve1 = reserve1.add(amountOut);
 
-        token1.mint(to, amountOut);
+            token1.mint(to, amountOut);
+        } else {
+            amountOut = reserve0.mul(amountIn.div(reserve1.add(amountIn)));
+        }        
     }
 
 
-    //function reedem(){}
+    // add admin only
+    function resolve(uint result) public {
+        require(eventResolved == 0, 'FORBIDDEN');
+        // require(msg.sender == factory, 'FORBIDDEN');
+        eventResult = result;
+        eventResolved = 1;
+    }
 
-    //function resolve(){}
+
+    function reedem(uint userBalance) public {
+        require(eventResolved == 1, 'FORBIDDEN');
+
+        if (eventResult == 0){
+            // default bool false
+
+            // need to check for the values coming in
+            uint totalReserves = IERC20(reserveToken).balanceOf(address(this));
+
+            uint reservesOut = totalReserves * userBalance / reserve0;
+
+            reserve0 = reserve0.sub(userBalance);
+            IERC20(reserveToken).transfer(msg.sender, reservesOut);
+        }
+
+        if (eventResult == 1){
+            
+        }
+
+    }
 
 }
