@@ -80,23 +80,25 @@ describe("Pair", function () {
     expect(await pair.eventResult()).to.eq(2);
   });
 
-  it("Reedems", async function () {
-
+  it("Redeems", async function () {
     const number = 100;
     const tokenAmount = expandTo18Decimals(number);
     const div2Number = BigInt(Number(tokenAmount)  / 2);
 
     await reserveToken.transfer(pairAddress, tokenAmount);
-
+    
     await pair.voteNo(jane.address);
 
     await pair.resolve(0);
 
-    await pair.reedem(div2Number);
+    await token0.connect(jane).approve(pairAddress, div2Number);
+    await token1.connect(jane).approve(pairAddress, div2Number);
+
+    await pair.connect(jane).redeem(div2Number);
 
     expect(await reserveToken.balanceOf(pairAddress)).to.eq(0);
-    //expect(await token0.balanceOf(jane.address)).to.eq(0);
-    //expect(await reserveToken.balanceOf(jane.address)).to.eq(0);
+    expect(await token0.balanceOf(jane.address)).to.eq(0);
+    expect(await reserveToken.balanceOf(jane.address)).to.eq(tokenAmount);
   });
 
   /*   it("Should swap", async function () {

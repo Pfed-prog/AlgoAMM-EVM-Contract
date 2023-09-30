@@ -88,6 +88,7 @@ contract Pair is IPair {
             reserve1 = reserve1.add(amountOut);
 
             token0.mint(to, amountOut);
+            token1.mint(to, amountOut);
         } else {
             amountOut = reserve0.mul(amountIn.div(reserve1.add(amountIn)));
         }      
@@ -107,6 +108,7 @@ contract Pair is IPair {
             reserve0 = reserve0.add(amountOut);
             reserve1 = reserve1.add(amountOut);
 
+            token0.mint(to, amountOut);
             token1.mint(to, amountOut);
         } else {
             amountOut = reserve0.mul(amountIn.div(reserve1.add(amountIn)));
@@ -123,23 +125,24 @@ contract Pair is IPair {
     }
 
 
-    function reedem(uint userBalance) public {
+    function redeem(uint userBalance) public {
         require(eventResolved == 1, 'FORBIDDEN');
 
         if (eventResult == 0){
-            // default bool false
-
-            // need to check for the values coming in
             uint totalReserves = IERC20(reserveToken).balanceOf(address(this));
+
+            token0.transferFrom(msg.sender, address(this), userBalance);
 
             uint reservesOut = totalReserves * userBalance / reserve0;
 
             reserve0 = reserve0.sub(userBalance);
+
             IERC20(reserveToken).transfer(msg.sender, reservesOut);
         }
 
+        //complete this as well
         if (eventResult == 1){
-            
+            require(eventResolved == 0, 'FORBIDDEN');
         }
 
     }
