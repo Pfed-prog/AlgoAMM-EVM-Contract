@@ -48,7 +48,6 @@ contract Pair is IPair {
     }
 
 
-    // add resolution in factory?
     constructor() {
         factory = msg.sender;
     }
@@ -73,53 +72,31 @@ contract Pair is IPair {
     }
 
 
-    // organize into 1 single function with options to choose (vote)
-    function voteNo(address to) external lock returns (uint amountOut) {
+    function voteEqually(uint _amountIn) external lock returns (uint amountOut) {
+        amountOut = _amountIn.div(2);
+        reserve0 = reserve0.add(amountOut);
+        reserve1 = reserve1.add(amountOut);
 
-        uint balance = IERC20(reserveToken).balanceOf(address(this));
-
-        uint totalPositions = reserve0.add(reserve1);
-
-        uint amountIn = balance.sub(totalPositions);
-
-        if (totalPositions == 0) {
-            amountOut = amountIn.div(2);
-            reserve0 = reserve0.add(amountOut);
-            reserve1 = reserve1.add(amountOut);
-
-            token0.mint(to, amountOut);
-            token1.mint(to, amountOut);
-        } else {
-            amountOut = reserve0.mul(amountIn.div(reserve1.add(amountIn)));
-        }      
+        token0.mint(msg.sender, amountOut);
+        token1.mint(msg.sender, amountOut);
+        
     }
 
 
-    function voteYes(address to) external lock returns (uint amountOut) {
+    function voteNo(uint _amountIn) external {
+        token0.mint(msg.sender, _amountIn);
+    }
 
-        uint balance = IERC20(reserveToken).balanceOf(address(this));
 
-        uint totalPositions = reserve0.add(reserve1);
-
-        uint amountIn = balance.sub(totalPositions);
-
-        if (totalPositions == 0) {
-            amountOut = amountIn.div(2);
-            reserve0 = reserve0.add(amountOut);
-            reserve1 = reserve1.add(amountOut);
-
-            token0.mint(to, amountOut);
-            token1.mint(to, amountOut);
-        } else {
-            amountOut = reserve0.mul(amountIn.div(reserve1.add(amountIn)));
-        }        
+    function voteYes(uint _amountIn) external {
+        token1.mint(msg.sender, _amountIn);
     }
 
 
     // add admin only
     function resolve(uint result) public {
         require(eventResolved == 0, 'FORBIDDEN');
-        // require(msg.sender == factory, 'FORBIDDEN');
+        // require(msg.sender == admin, 'FORBIDDEN');
         eventResult = result;
         eventResolved = 1;
     }
@@ -129,7 +106,7 @@ contract Pair is IPair {
         require(eventResolved == 1, 'FORBIDDEN');
 
         if (eventResult == 0){
-            uint totalReserves = IERC20(reserveToken).balanceOf(address(this));
+            uint totalReserves = Token(reserveToken).balanceOf(address(this));
 
             token0.transferFrom(msg.sender, address(this), userBalance);
 
@@ -137,7 +114,7 @@ contract Pair is IPair {
 
             reserve0 = reserve0.sub(userBalance);
 
-            IERC20(reserveToken).transfer(msg.sender, reservesOut);
+            Token(reserveToken).transfer(msg.sender, reservesOut);
         }
 
         //complete this as well

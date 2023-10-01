@@ -53,9 +53,11 @@ describe("Pair", function () {
     const tokenAmount = expandTo18Decimals(number);
     const div2Number = BigInt(Number(tokenAmount)  / 2);
 
-    await reserveToken.transfer(pairAddress, tokenAmount);
+    await reserveToken.transfer(jane.address, tokenAmount);
 
-    await pair.voteNo(jane.address);
+    await reserveToken.connect(jane).approve(pairAddress, tokenAmount);
+    
+    await pair.connect(jane).voteNo(tokenAmount);
 
     expect(await reserveToken.balanceOf(pairAddress)).to.eq(tokenAmount);
     expect(await token0.balanceOf(jane.address)).to.eq(div2Number);
@@ -85,9 +87,11 @@ describe("Pair", function () {
     const tokenAmount = expandTo18Decimals(number);
     const div2Number = BigInt(Number(tokenAmount)  / 2);
 
-    await reserveToken.transfer(pairAddress, tokenAmount);
+    await reserveToken.transfer(jane.address, tokenAmount);
+
+    await reserveToken.connect(jane).approve(pairAddress, tokenAmount);
     
-    await pair.voteNo(jane.address);
+    await pair.connect(jane).voteNo(tokenAmount);
 
     await pair.resolve(0);
 
