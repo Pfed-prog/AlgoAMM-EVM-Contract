@@ -5,7 +5,6 @@ import './interfaces/IFactory.sol';
 import './Pair.sol';
 
 contract Factory is IFactory {
-    address public feeTo;
     address public feeToSetter;
 
     mapping(string => mapping(string => address)) public getPair;
@@ -39,13 +38,13 @@ contract Factory is IFactory {
         return getPair[option0][option1];
     }
 
-    function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, 'FORBIDDEN');
-        feeTo = _feeTo;
-    }
-
     function setFeeToSetter(address _feeToSetter) external {
         require(msg.sender == feeToSetter, 'FORBIDDEN');
         feeToSetter = _feeToSetter;
+    }
+
+    function resolveEvent(address _event, uint _result) external {
+        require(msg.sender == feeToSetter, 'FORBIDDEN');
+        IPair(_event).resolve(_result);
     }
 }

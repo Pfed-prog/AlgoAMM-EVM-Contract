@@ -32,12 +32,11 @@ contract Pair is IPair {
     uint private reserve1;
     uint private baseReserve;
 
-    uint public kLast; // reserve0 * reserve1, as of immediately after the most recent amountOut event
     uint private unlocked = 1;
 
     uint public eventResolved;
     uint public eventResult;
-    // ? add array for options
+
 
     // what if i change constant to 0: saves gas?
     modifier lock() {
@@ -72,38 +71,44 @@ contract Pair is IPair {
     }
 
 
-    function voteEqually(uint _amountIn) external lock returns (uint amountOut) {
-        amountOut = _amountIn.div(2);
+    function voteEqually(uint _amountIn) external lock {
+        Token(reserveToken).transferFrom(msg.sender, address(this), _amountIn);
+        
+        uint amountOut = _amountIn.div(2);
+        
         reserve0 = reserve0.add(amountOut);
         reserve1 = reserve1.add(amountOut);
 
         token0.mint(msg.sender, amountOut);
         token1.mint(msg.sender, amountOut);
-        
     }
 
 
     function voteNo(uint _amountIn) external {
+        Token(reserveToken).transferFrom(msg.sender, address(this), _amountIn);
+        reserve0 = reserve0.add(_amountIn);
         token0.mint(msg.sender, _amountIn);
     }
 
 
     function voteYes(uint _amountIn) external {
+        Token(reserveToken).transferFrom(msg.sender, address(this), _amountIn);
+        reserve1 = reserve1.add(_amountIn);
         token1.mint(msg.sender, _amountIn);
     }
 
 
-    // add admin only
-    function resolve(uint result) public {
-        require(eventResolved == 0, 'FORBIDDEN');
-        // require(msg.sender == admin, 'FORBIDDEN');
+    function resolve(uint result) external {
+        require(eventResolved == 0, 'Already Resolved');
+        require(msg.sender == factory, 'Not a factory');
         eventResult = result;
         eventResolved = 1;
     }
 
 
-    function redeem(uint userBalance) public {
-        require(eventResolved == 1, 'FORBIDDEN');
+    function redeem(uint userBalance) external {
+        //check for correctness
+        require(eventResolved == 1, 'Not resolved');
 
         if (eventResult == 0){
             uint totalReserves = Token(reserveToken).balanceOf(address(this));
@@ -117,9 +122,16 @@ contract Pair is IPair {
             Token(reserveToken).transfer(msg.sender, reservesOut);
         }
 
-        //complete this as well
         if (eventResult == 1){
-            require(eventResolved == 0, 'FORBIDDEN');
+            uint totalReserves = Token(reserveToken).balanceOf(address(this));
+
+            token1.transferFrom(msg.sender, address(this), userBalance);
+
+            uint reservesOut = totalReserves * userBalance / reserve1;
+
+            reserve1 = reserve1.sub(userBalance);
+
+            Token(reserveToken).transfer(msg.sender, reservesOut);
         }
 
     }
