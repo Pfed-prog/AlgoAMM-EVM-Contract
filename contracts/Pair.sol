@@ -107,7 +107,6 @@ contract Pair is IPair {
 
 
     function redeem(uint userBalance) external {
-        //check for correctness
         require(eventResolved == 1, 'Not resolved');
 
         if (eventResult == 0){

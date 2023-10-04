@@ -9,4 +9,9 @@ module.exports = {
     gasPrice: 21,
     enabled: true,
   },
+  networks: {
+    tronDev: {
+      accounts: [],
+    }
+  }
 };
